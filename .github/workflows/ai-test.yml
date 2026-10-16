@@ -1,0 +1,52 @@
+name: AI Test Workbench CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # ---- Job 1：离线机制验证（不花钱、不需要 key，每次提交必跑） ----
+  workbench-mock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run workbench (mock all + local rag)
+        run: |
+          python ai_test_workbench.py --mock
+          python ai_test_workbench.py --module rag
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: workbench-mock-report
+          path: workbench_report.json
+
+  # ---- Job 2：真实 API 回归（配了 secret 才跑，避免每次 push 烧钱） ----
+  workbench-live:
+    runs-on: ubuntu-latest
+    if: ${{ secrets.DEEPSEEK_API_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run live AI regression (regression + injection + classifier)
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          python ai_test_workbench.py --module regression
+          python ai_test_workbench.py --module injection
+          python ai_test_workbench.py --module classifier
+      - name: Upload live report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: workbench-live-report
+          path: workbench_report.json
