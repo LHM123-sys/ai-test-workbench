@@ -28,4 +28,4 @@ class TestRagQa:
         """参数化：一组数据跑多个用例"""
         answer = rag_client.ask(question, contexts=["物流时效：下单后48小时内发货，省内次日达。"])
         assert expected_keyword in answer, f"期望包含'{expected_keyword}': {answer}"
-        print(f"Q: {question} → A: {answer}")
+        print(f"Q: {question} → A: {answer}") 
