@@ -1,26 +1,36 @@
-name: API Auto Test
+name: AI Test CI
+
 on:
   push:
-    branches: [main]
   pull_request:
-    branches: [main]
+
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-      - run: pip install pyyaml requests pytest allure-pytest
+
+      # ① 多装一个 pytest-html 插件
+      - name: Install dependencies
+        run: pip install pyyaml requests pytest pytest-html
+
+      # ② pytest 加两个参数：生成 HTML 报告
       - name: Run pytest
+        working-directory: api_auto_demo
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-        run: |
-          cd api_auto_demo
-          pytest cases/test_rag.py -v --alluredir=reports/allure-results
-      - name: Upload Allure Report
+        run: pytest cases/test_rag.py -v --html=report.html --self-contained-html
+
+      # ③ 新增一步：把报告上传成 Artifact
+      - name: Upload test report
         uses: actions/upload-artifact@v4
         with:
-          name: allure-report
-          path: api_auto_demo/reports/allure-results
+          name: test-report
+          path: api_auto_demo/report.html
